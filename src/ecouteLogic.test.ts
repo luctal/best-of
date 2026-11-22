@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
+import type { AlbumEcoute } from './ecouteLogic'
+import { albumsAffiches, libelleMasques, partagerAlbums, anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
 
 const t = (id: number, albumId: number, albumTitre: string, artiste: string, timeAdd: number): TitreDeezer => ({ id, albumId, albumTitre, artiste, timeAdd })
 const J = 86400
@@ -108,5 +109,35 @@ describe('anneeEnCours', () => {
   })
   it('bascule du 31 décembre : 23h30 UTC = 1er janvier à Paris', () => {
     expect(anneeEnCours(new Date(Date.UTC(2026, 11, 31, 23, 30)))).toBe(2027)
+  })
+})
+
+describe('masquage des albums déjà en base', () => {
+  const index = indexerBase([
+    { artiste: 'Weezer', album: 'Weezer (Gold Album)', deezer_album_id: null },
+    { artiste: 'Autre', album: 'Sans id', deezer_album_id: 777 },
+  ])
+  const alb = (albumId: number, artiste: string, titre: string): AlbumEcoute => ({ albumId, artiste, titre, morceaux: 1, coeurs: 0, moisEcoute: null, premierAjout: albumId, dernierAjout: albumId })
+  const albums = [alb(989348601, 'Weezer', 'Weezer'), alb(777, 'X', 'Y'), alb(1, 'Alabama Shakes', 'Nouveau'), alb(2, 'Erykah Badu', 'Autre')]
+  it('masque par nom et par identifiant, compte les albums à traiter', () => {
+    const p = partagerAlbums(albums, index, new Set())
+    expect(p.atraiter.map((a) => a.albumId)).toEqual([1, 2])
+    expect(p.masques.map((a) => a.albumId)).toEqual([989348601, 777])
+  })
+  it('un album enregistré disparaît, masqué ou non', () => {
+    const p = partagerAlbums(albums, index, new Set([1, 777]))
+    expect(p.atraiter.map((a) => a.albumId)).toEqual([2])
+    expect(p.masques.map((a) => a.albumId)).toEqual([989348601])
+    expect(albumsAffiches(albums, p, true).map((a) => a.albumId)).toEqual([989348601, 2])
+  })
+  it('masqués cachés par défaut, réaffichés dans l\'ordre d\'origine', () => {
+    const p = partagerAlbums(albums, index, new Set())
+    expect(albumsAffiches(albums, p, false).map((a) => a.albumId)).toEqual([1, 2])
+    expect(albumsAffiches(albums, p, true).map((a) => a.albumId)).toEqual([989348601, 777, 1, 2])
+  })
+  it('libellé', () => {
+    expect(libelleMasques(0)).toBe('0 album déjà en base masqué')
+    expect(libelleMasques(1)).toBe('1 album déjà en base masqué')
+    expect(libelleMasques(12)).toBe('12 albums déjà en base masqués')
   })
 })

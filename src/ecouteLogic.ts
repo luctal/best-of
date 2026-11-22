@@ -101,6 +101,35 @@ export function dejaEnBase(a: Pick<AlbumEcoute, 'albumId' | 'artiste' | 'titre'>
   return null
 }
 
+export interface Partage {
+  atraiter: AlbumEcoute[]
+  masques: AlbumEcoute[]
+}
+
+// Sépare les albums à traiter des albums déjà en base (même deezer_album_id ou même nom) ; les albums
+// enregistrés pendant la session disparaissent tout de suite, qu'ils soient masqués ou affichés.
+export function partagerAlbums(albums: readonly AlbumEcoute[], index: BaseIndex, enregistres: ReadonlySet<number>): Partage {
+  const atraiter: AlbumEcoute[] = []
+  const masques: AlbumEcoute[] = []
+  for (const a of albums) {
+    if (enregistres.has(a.albumId)) continue
+    if (dejaEnBase(a, index)) masques.push(a)
+    else atraiter.push(a)
+  }
+  return { atraiter, masques }
+}
+
+// Liste affichée : les albums à traiter, plus les masqués (grisés) si l'utilisateur les réaffiche, dans l'ordre d'origine.
+export function albumsAffiches(albums: readonly AlbumEcoute[], partage: Partage, montrerMasques: boolean): AlbumEcoute[] {
+  if (!montrerMasques) return partage.atraiter
+  const gardes = new Set([...partage.atraiter, ...partage.masques].map((a) => a.albumId))
+  return albums.filter((a) => gardes.has(a.albumId))
+}
+
+export function libelleMasques(n: number): string {
+  return `${n} album${n > 1 ? 's' : ''} déjà en base masqué${n > 1 ? 's' : ''}`
+}
+
 // Année proposée : l'année en cours (heure de Paris) au moment de l'enregistrement, modifiable. Jamais la date de sortie.
 export function anneeEnCours(maintenant: Date = new Date()): number {
   return Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric' }).format(maintenant))

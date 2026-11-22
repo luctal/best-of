@@ -9,6 +9,8 @@ m src/calculLogic.ts 's/\(scoreAlbum \* 20\) \/ meilleur/(scoreAlbum * 10) \/ me
 m src/calculLogic.ts 's/Math.ceil\(scoreMax/Math.round(scoreMax/' src/calculLogic.test.ts "meilleur score : arrondi au plus proche au lieu du centième supérieur"
 m src/calculLogic.ts 's/Math.min\(\.\.\.t\)/Math.max(...t)/' src/calculLogic.test.ts "date d'écoute : plus récente au lieu de la plus ancienne"
 m src/calculLogic.ts 's/note > SEUIL_ROUGE|n > SEUIL_ROUGE/n >= SEUIL_ROUGE/' src/calculLogic.test.ts "règle du rouge : >= 10 au lieu de > 10"
+m src/ecouteLogic.ts 's/if \(dejaEnBase\(a, index\)\) masques/if (false) masques/' src/ecouteLogic.test.ts "masquage : albums déjà en base non masqués"
+m src/ecouteLogic.ts 's/if \(enregistres.has\(a.albumId\)\) continue/if (false) continue/' src/ecouteLogic.test.ts "masquage : albums enregistrés toujours listés"
 m src/ecouteLogic.ts 's/const g = groupes.get\(t.albumId\)/const g = groupes.get(t.albumTitre as unknown as number)/' src/ecouteLogic.test.ts "regroupement : par titre au lieu de album.id"
 m src/ecouteLogic.ts 's/\.sort\(\(a, b\) => a.premierAjout - b.premierAjout/.sort((a, b) => b.premierAjout - a.premierAjout/' src/ecouteLogic.test.ts "regroupement : plus récent d'abord"
 m src/ecouteLogic.ts 's/replace\(\/\\\(\[\^\)\]\*\\\)\|\\\[\[\^\\\]\]\*\\\]\/g, . .\)/replace(\/\\(\\)\/g, " ")/' src/ecouteLogic.test.ts "filtre : mentions entre parenthèses non ignorées"

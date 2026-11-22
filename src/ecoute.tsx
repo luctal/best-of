@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Api } from './adminApi'
 import { formaterMois, formaterNombre } from './calculLogic'
 import { lireCoeurs, lireFichesAlbums, lirePlaylistTitres, PLAYLIST_ECOUTE, PROFIL_COEURS, type FicheAlbum } from './deezer'
-import { anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, regrouperParAlbum, type AlbumEcoute } from './ecouteLogic'
+import { albumsAffiches, anneeEnCours, apercu, dejaEnBase, indexerBase, libelleMasques, ligneAEnregistrer, messageMeilleur, partagerAlbums, regrouperParAlbum, type AlbumEcoute } from './ecouteLogic'
 import { traduireErreur } from './erreursLogic'
 import type { AlbumLeger } from './types'
 
@@ -45,6 +45,8 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
   const [echecs, setEchecs] = useState<Echec[]>([])
   const [bilan, setBilan] = useState<string | null>(null)
   const [essai, setEssai] = useState(0)
+  const [enregistres, setEnregistres] = useState<Set<number>>(new Set())
+  const [montrerMasques, setMontrerMasques] = useState(false)
 
   useEffect(() => {
     let actif = true
@@ -76,10 +78,13 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
   const anneeNum = (e: Edition): number | null => (/^\d{4}$/.test(e.annee.trim()) ? Number(e.annee) : null)
   const nbTracks = (a: AlbumEcoute) => lecture?.fiches.get(a.albumId)?.nbTracks ?? null
 
+  const partage = useMemo(() => (lecture ? partagerAlbums(lecture.albums, index, enregistres) : { atraiter: [], masques: [] }), [lecture, index, enregistres])
+  const affiches = useMemo(() => (lecture ? albumsAffiches(lecture.albums, partage, montrerMasques) : []), [lecture, partage, montrerMasques])
+
   const aEnregistrer = useMemo(() => {
     if (!lecture) return []
-    return lecture.albums.filter((a) => selection.has(a.albumId))
-  }, [lecture, selection])
+    return affiches.filter((a) => selection.has(a.albumId))
+  }, [lecture, selection, affiches])
 
   if (erreur) {
     return (
@@ -134,6 +139,7 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
     }
     setMessages(msgs)
     setEchecs(nouveauxEchecs)
+    setEnregistres((s) => new Set([...s, ...reussis]))
     setSelection((s) => {
       const n = new Set(s)
       for (const id of reussis) n.delete(id)
@@ -149,9 +155,16 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
       <p className="mb-3 text-sm" data-testid="lecture">
         <span data-testid="nb-titres">{lecture.titresLus}</span> titres lus dans la playlist, <span data-testid="nb-coeurs">{lecture.coeursLus}</span> cœurs lus, {lecture.albums.length} albums.
       </p>
+      <p className="mb-1 text-lg font-titre font-semibold" data-testid="a-traiter">{partage.atraiter.length} album{partage.atraiter.length > 1 ? 's' : ''} à traiter</p>
+      <p className="mb-3 flex flex-wrap items-center gap-3 text-sm">
+        <span data-testid="nb-masques">{libelleMasques(partage.masques.length)}</span>
+        {partage.masques.length > 0 && (
+          <button type="button" className="min-h-11 rounded-xl border border-sage px-4 font-semibold" aria-pressed={montrerMasques} onClick={() => setMontrerMasques((v) => !v)}>{montrerMasques ? 'Masquer' : 'Afficher'}</button>
+        )}
+      </p>
       {lecture.titresAvecAlbum < lecture.titresLus && <p className="mb-3 text-sm text-ambre">{lecture.titresLus - lecture.titresAvecAlbum} titres sans album ignorés.</p>}
       <ul className="space-y-3">
-        {lecture.albums.map((a) => {
+        {affiches.map((a) => {
           const deja = dejaEnBase(a, index)
           const ed = edition(a)
           const an = anneeNum(ed)

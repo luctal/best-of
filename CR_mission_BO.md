@@ -108,4 +108,27 @@ Prochain geste : relecture de Luc, git push, activation de Pages (source : GitHu
 Non prouvé : inchangé (écritures réelles en base, fenêtre de modification au banc, workflow Pages).
 Note : le test de l'année dépend de la date de l'horloge seulement par les dates passées explicitement ; le banc compare à l'année de la machine.
 
+## Mission BO2d
+
+Écran Écoute : les albums déjà en base (même deezer_album_id, ou même artiste + titre normalisés) sont masqués par défaut. Sous le compteur « n albums à traiter » (hors masqués) : « n albums déjà en base masqués » et un bouton « Afficher » / « Masquer » qui les réaffiche grisés, non cochés. Après « Enregistrer », les albums enregistrés disparaissent tout de suite (masqués ou affichés). Logique pure dans ecouteLogic.ts (partagerAlbums, albumsAffiches, libelleMasques), rendu dans ecoute.tsx. Lecture seule en base, enregistrement par bouchon.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Vitest | vert | 73 tests | OK |
+| Mutations | une mordante pour le masquage | 18 mutations, toutes mordent (dont « déjà en base non masqués » : 3 tests rouges, et « enregistrés toujours listés » : 1 test rouge) | OK |
+| npm run build | sans avertissement | 0 avertissement | OK |
+| Contrôle secrets | OK | rien trouvé (52 fichiers) | OK |
+| 390 et 1100 px, par défaut | Weezer et Alabama Shakes masqués ; compteur = lignes | 56 à traiter, 56 lignes, 3 masqués ; Weezer et Alabama Shakes absents | OK |
+| « Afficher » | masqués visibles, grisés, non cochés | Weezer « déjà en base (même nom) », grisé, non coché ; Alabama Shakes « déjà en base » (par identifiant), grisé ; 59 lignes, compteur inchangé | OK |
+| « Masquer » | Weezer de nouveau absent | 0 | OK |
+| Après enregistrement (bouchon) | album disparu, compteur -1 | présent = 0, 55 à traiter (avant 56) | OK |
+| Défilement horizontal, boutons | aucun ; >= 44 px | aucun, aucun | OK |
+| Année 2026 : nombre d'albums | 106 (critère de BO2c) | 107 | écart expliqué |
+
+Écart : la base compte maintenant 107 albums en 2026 (106 à la mission BO2c). Alabama Shakes, I Must Be Dreaming, est désormais en base avec son identifiant Deezer (masqué par identifiant) : l'écart vient d'un enregistrement fait hors mission, pas du code. L'export a donc 107 lignes. Le critère « 106 » de BO2c n'est pas un critère de BO2d.
+
+Non prouvé : l'enregistrement réel (bouchon seulement) ; après un enregistrement réel, l'appli recharge la base (surChange) : l'album reste masqué par la liste locale, puis par la base.
+
+Prochain geste : relecture de Luc, git push.
+
 cd ~/best-of && git push
