@@ -24,9 +24,9 @@ describe('manifeste de l’appli', () => {
     expect(manifeste.scope).toBe('/best-of/')
     expect(manifeste.display).toBe('standalone')
   })
-  it('couleurs égales aux tokens fond et vert-sombre', () => {
+  it('couleurs égales aux tokens fond et bordeaux', () => {
     expect(manifeste.background_color.toUpperCase()).toBe(token('fond'))
-    expect(manifeste.theme_color.toUpperCase()).toBe(token('vert-sombre'))
+    expect(manifeste.theme_color.toUpperCase()).toBe(token('bordeaux'))
   })
   it('theme-color de index.html égale au token vert-sombre', () => {
     const m = /<meta name="theme-color" content="(#[0-9A-Fa-f]{6})"/.exec(lire('index.html'))

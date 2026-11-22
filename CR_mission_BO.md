@@ -131,4 +131,21 @@ Non prouvé : l'enregistrement réel (bouchon seulement) ; après un enregistrem
 
 Prochain geste : relecture de Luc, git push.
 
+## Mission BO2e
+
+Icônes remplacées dans public/ depuis ~/icones-bo.zip (décompressé hors dépôt) : icone.svg, icone-192.png, icone-512.png, icone-512-maskable.png, apple-touch-icon.png (mêmes noms). icone-maskable.svg non copié dans public/. Manifeste : seul theme_color change, #2D4E28 -> #86193F.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Fichiers | 5 remplacés, mêmes noms | 192x192, 512x512, 512x512 maskable, 180x180 PNG + svg ; icone-maskable.svg absent de public/ | OK |
+| Manifeste | theme_color #86193F, reste inchangé | identique | OK |
+| Vitest | vert | 73 tests ; un test lisait theme_color = token vert-sombre : #86193F est le token bordeaux, test aligné sur bordeaux | OK |
+| Build | sans avertissement | 0 | OK |
+| Contrôle secrets | OK | rien trouvé (52 fichiers) | OK |
+
+À connaître : la balise theme-color de index.html reste #2D4E28 (hors ordre, son test inchangé) ; elle ne sera plus identique au manifeste. À décider par Luc.
+Non prouvé : rendu des icônes sur téléphone (installation de la page).
+
+Prochain geste : relecture de Luc, git push.
+
 cd ~/best-of && git push
