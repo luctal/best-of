@@ -101,6 +101,11 @@ export function dejaEnBase(a: Pick<AlbumEcoute, 'albumId' | 'artiste' | 'titre'>
   return null
 }
 
+// Année proposée : l'année en cours (heure de Paris) au moment de l'enregistrement, modifiable. Jamais la date de sortie.
+export function anneeEnCours(maintenant: Date = new Date()): number {
+  return Number(new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', year: 'numeric' }).format(maintenant))
+}
+
 export interface Edition {
   titre: string
   annee: number | null

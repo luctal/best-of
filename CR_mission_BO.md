@@ -95,4 +95,17 @@ Non prouvé : l'enregistrement réel et les modifications/suppressions en base (
 
 Prochain geste : relecture de Luc, git push, activation de Pages (source : GitHub Actions), puis première saisie réelle du code admin sur l'appareil.
 
+## Mission BO2c — corrections
+
+| Correction | Mesuré | Verdict |
+|---|---|---|
+| 1. Écran Écoute : année proposée = année en cours (heure de Paris) au moment de l'enregistrement, modifiable ; plus de release_date (la fiche Deezer ne sert plus qu'à nb_tracks) | test anneeEnCours (dont bascule du 31 décembre) ; mutation « fuseau UTC au lieu de Paris » mord ; banc 390 et 1100 px : année proposée 2026 | OK |
+| 2. Export : note > 10 en police FF0000 ; l'écran garde les tokens | test relu par exceljs (FFFF0000) ; mutation « bordeaux au lieu du rouge vif » mord ; banc : Weezer FFFF0000, Phoebe sans couleur | OK |
+| Tests, mutations | 69 tests verts ; 16 mutations, toutes mordent | OK |
+| Build, secrets | build sans erreur ni avertissement ; contrôle secrets : rien trouvé | OK |
+| Banc complet | 390 et 1100 px, aucun KO (752 titres, 8 605 cœurs, Weezer grisé, 106 albums, export 106 lignes) | OK |
+
+Non prouvé : inchangé (écritures réelles en base, fenêtre de modification au banc, workflow Pages).
+Note : le test de l'année dépend de la date de l'horloge seulement par les dates passées explicitement ; le banc compare à l'année de la machine.
+
 cd ~/best-of && git push

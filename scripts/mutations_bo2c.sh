@@ -18,5 +18,7 @@ m src/anneeLogic.ts "s/annee <= 2009 \? \['rang', 'artiste', 'adores', 'pas_mal'
 m src/anneeLogic.ts 's/const f = tri.sens === .asc. \? 1 : -1/const f = tri.sens === "asc" ? -1 : 1/' src/anneeLogic.test.ts "tri : sens inversé"
 m src/exportLogic.ts 's/rouge: ligneRouge\(a\)/rouge: !ligneRouge(a)/' src/exportLogic.test.ts "export : rouge inversé"
 m src/adminLogic.ts "s/format === 'appli' \|\| format === '2023-2026'/format === 'appli'/" src/adminLogic.test.ts "admin : 2023-2026 non recalculable"
+m src/ecouteLogic.ts "s/timeZone: 'Europe\/Paris', year: 'numeric' \}\)\.format\(maintenant\)/timeZone: 'UTC', year: 'numeric' }).format(maintenant)/" src/ecouteLogic.test.ts "année proposée : fuseau UTC au lieu de Paris"
+m src/exporter.ts "s/'FFFF0000'/'FF86193F'/" src/exporter.test.ts "export : rouge vif remplacé par le bordeaux"
 [ $R = 0 ] && echo "TOUTES LES MUTATIONS MORDENT" || echo "AU MOINS UNE MUTATION NE MORD PAS"
 exit $R

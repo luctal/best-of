@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
+import { anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
 
 const t = (id: number, albumId: number, albumTitre: string, artiste: string, timeAdd: number): TitreDeezer => ({ id, albumId, albumTitre, artiste, timeAdd })
 const J = 86400
@@ -98,5 +98,15 @@ describe('messageMeilleur', () => {
   })
   it('rien si inchangé', () => {
     expect(messageMeilleur(2026, 1.62, 1.62)).toBeNull()
+  })
+})
+
+describe('anneeEnCours', () => {
+  it('année en cours à Paris, jamais une date de sortie', () => {
+    expect(anneeEnCours(new Date(Date.UTC(2026, 10, 22, 12)))).toBe(2026)
+    expect(anneeEnCours(new Date(Date.UTC(2027, 5, 1, 12)))).toBe(2027)
+  })
+  it('bascule du 31 décembre : 23h30 UTC = 1er janvier à Paris', () => {
+    expect(anneeEnCours(new Date(Date.UTC(2026, 11, 31, 23, 30)))).toBe(2027)
   })
 })

@@ -2,17 +2,12 @@
 import { ongletsExport } from './exportLogic'
 import type { Album } from './types'
 
-// Couleur de police des lignes rouges : le token bordeaux de la page (tokens.css reste la seule source), au format ARGB.
-export function rougeDepuisPage(): string {
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--color-bordeaux').trim()
-  const m = /^#([0-9A-Fa-f]{6})$/.exec(v)
-  if (!m) throw new Error('token bordeaux absent')
-  return `FF${m[1].toUpperCase()}`
-}
+// Police des lignes à note > 10 dans l'Excel : rouge vif, comme le fichier de Luc (l'écran garde les tokens de la charte).
+export const ROUGE_EXCEL = 'FFFF0000'
 
 const LARGEURS: Record<string, number> = { rang: 8, artiste: 30, album: 38, adores: 10, pas_mal: 10, coeurs: 9, morceaux: 11, note: 9, mois: 14 }
 
-export async function classeur(albums: readonly Album[], rouge: string): Promise<ArrayBuffer> {
+export async function classeur(albums: readonly Album[]): Promise<ArrayBuffer> {
   const { default: ExcelJS } = await import('exceljs') // chargé à la demande : le classeur pèse plus que le reste de la page
   const wb = new ExcelJS.Workbook()
   for (const o of ongletsExport(albums)) {
@@ -27,7 +22,7 @@ export async function classeur(albums: readonly Album[], rouge: string): Promise
         if (c.cle === 'mois') cell.numFmt = 'mmm yyyy'
         if (c.cle === 'note') cell.numFmt = '0.00'
       })
-      if (l.rouge) row.font = { color: { argb: rouge } }
+      if (l.rouge) row.font = { color: { argb: ROUGE_EXCEL } }
     }
   }
   return (await wb.xlsx.writeBuffer()) as ArrayBuffer

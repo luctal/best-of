@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Api } from './adminApi'
 import { formaterMois, formaterNombre } from './calculLogic'
 import { lireCoeurs, lireFichesAlbums, lirePlaylistTitres, PLAYLIST_ECOUTE, PROFIL_COEURS, type FicheAlbum } from './deezer'
-import { apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, regrouperParAlbum, type AlbumEcoute } from './ecouteLogic'
+import { anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, regrouperParAlbum, type AlbumEcoute } from './ecouteLogic'
 import { traduireErreur } from './erreursLogic'
 import type { AlbumLeger } from './types'
 
@@ -57,8 +57,8 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
         setEtape('Lecture des cœurs…')
         const coeurs = await lireCoeurs(PROFIL_COEURS, (n) => actif && setEtape(`Lecture des cœurs : ${n}…`))
         const albums = regrouperParAlbum(pl.titres, coeurs.ids)
-        setEtape(`Années des ${albums.length} albums…`)
-        const fiches = await lireFichesAlbums(albums.map((a) => a.albumId), (f, t) => actif && setEtape(`Années des albums : ${f} sur ${t}…`))
+        setEtape(`Fiches des ${albums.length} albums…`)
+        const fiches = await lireFichesAlbums(albums.map((a) => a.albumId), (f, t) => actif && setEtape(`Fiches des albums : ${f} sur ${t}…`))
         if (!actif) return
         setLecture({ titresLus: pl.lus, titresAvecAlbum: pl.titres.length, coeursLus: coeurs.ids.size, albums, fiches })
       } catch (e) {
@@ -72,7 +72,7 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
 
   const index = useMemo(() => indexerBase(legers), [legers])
 
-  const edition = (a: AlbumEcoute): Edition => editions[a.albumId] ?? { titre: a.titre, annee: lecture?.fiches.get(a.albumId)?.annee?.toString() ?? '' }
+  const edition = (a: AlbumEcoute): Edition => editions[a.albumId] ?? { titre: a.titre, annee: String(anneeEnCours()) }
   const anneeNum = (e: Edition): number | null => (/^\d{4}$/.test(e.annee.trim()) ? Number(e.annee) : null)
   const nbTracks = (a: AlbumEcoute) => lecture?.fiches.get(a.albumId)?.nbTracks ?? null
 

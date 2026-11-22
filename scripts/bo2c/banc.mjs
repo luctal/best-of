@@ -75,7 +75,7 @@ for (const [largeur, hauteur] of [[390, 800], [1100, 800]]) {
     noter('Export : onglet 2026', '106 lignes', `${ws.rowCount - 1} lignes`, ws.rowCount - 1 === 106)
     const trouve = (nom) => { for (let i = 2; i <= ws.rowCount; i++) if (String(ws.getRow(i).getCell(2).value) === nom) return ws.getRow(i) }
     const rw = trouve('Weezer (Gold Album)')
-    noter('Export : Weezer en rouge', 'police colorée, note 15,65 numérique', `${rw?.getCell(1).font?.color?.argb}, ${typeof rw?.getCell(5).value}, ${rw?.getCell(5).value?.toFixed?.(2)}`, !!rw?.getCell(1).font?.color?.argb && typeof rw.getCell(5).value === 'number' && rw.getCell(5).value.toFixed(2) === '15.65')
+    noter('Export : Weezer en rouge vif', 'police FFFF0000, note 15,65 numérique', `${rw?.getCell(1).font?.color?.argb}, ${typeof rw?.getCell(5).value}, ${rw?.getCell(5).value?.toFixed?.(2)}`, rw?.getCell(1).font?.color?.argb === 'FFFF0000' && typeof rw.getCell(5).value === 'number' && rw.getCell(5).value.toFixed(2) === '15.65')
     const rc = ws.getRow(2)
     noter('Export : The Coral', '19,94 en tête', `${rc.getCell(1).value} / ${rc.getCell(5).value?.toFixed?.(2)}`, rc.getCell(1).value === 'The Coral' && rc.getCell(5).value.toFixed(2) === '19.94')
     const rp = [...Array(ws.rowCount).keys()].map((i) => ws.getRow(i + 1)).find((r) => String(r.getCell(1).value).startsWith('Phoebe Bridgers'))
@@ -102,6 +102,8 @@ for (const [largeur, hauteur] of [[390, 800], [1100, 800]]) {
   // Enregistrement par bouchon : un album non en base, coché.
   const cible = await q.$('li[data-deja=non] input[type=checkbox]')
   await cible.check()
+  const anneeProposee = await q.inputValue('li[data-deja=non]:has(input:checked) input[inputmode=numeric]')
+  noter(`${L} Écoute : année proposée`, `année en cours (${new Date().getFullYear()})`, anneeProposee, anneeProposee === String(new Date().getFullYear()))
   await q.waitForSelector('button:has-text("Enregistrer la sélection (1)")')
   await q.click('button:has-text("Enregistrer la sélection (1)")')
   await q.waitForSelector('[data-testid=bilan]')

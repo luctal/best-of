@@ -5,7 +5,7 @@ import { Annee } from './annee'
 import { chargerLegers, chargerMeilleurs, chargerTous } from './donnees'
 import { Ecoute } from './ecoute'
 import { traduireErreur } from './erreursLogic'
-import { classeur, rougeDepuisPage, telecharger } from './exporter'
+import { classeur, telecharger } from './exporter'
 import { Porte } from './porte'
 import type { AlbumLeger } from './types'
 
@@ -39,7 +39,7 @@ export function App() {
   async function exporter() {
     setExport('encours')
     try {
-      telecharger(await classeur(await chargerTous(), rougeDepuisPage()), 'best-of.xlsx')
+      telecharger(await classeur(await chargerTous()), 'best-of.xlsx')
     } catch (e) {
       setErreur(traduireErreur(e))
     } finally {

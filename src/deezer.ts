@@ -90,19 +90,18 @@ export async function lireCoeurs(profil: string, surPage?: (n: number) => void):
   return { ids, total }
 }
 
+// Seul nb_tracks est lu : il sert à signaler un écart avec la playlist (l'année ne vient jamais de Deezer).
 export interface FicheAlbum {
-  annee: number | null
   nbTracks: number | null
 }
 
 async function ficheAlbum(albumId: number): Promise<FicheAlbum> {
   try {
-    const r = await appeler<{ release_date?: string; nb_tracks?: number }>(`https://api.deezer.com/album/${albumId}`, 8000)
-    if (r.error) return { annee: null, nbTracks: null }
-    const m = /^(\d{4})-\d{2}-\d{2}$/.exec(r.release_date ?? '')
-    return { annee: m ? Number(m[1]) : null, nbTracks: typeof r.nb_tracks === 'number' ? r.nb_tracks : null }
+    const r = await appeler<{ nb_tracks?: number }>(`https://api.deezer.com/album/${albumId}`, 8000)
+    if (r.error) return { nbTracks: null }
+    return { nbTracks: typeof r.nb_tracks === 'number' ? r.nb_tracks : null }
   } catch {
-    return { annee: null, nbTracks: null }
+    return { nbTracks: null }
   }
 }
 
