@@ -148,4 +148,18 @@ Non prouvé : rendu des icônes sur téléphone (installation de la page).
 
 Prochain geste : relecture de Luc, git push.
 
+## Mission BO2e bis
+
+Balise meta theme-color de index.html : #2D4E28 -> #86193F, identique au manifeste (token bordeaux) ; son test aligné sur le token bordeaux.
+
+| Critère | Mesuré | Verdict |
+|---|---|---|
+| Vitest | 73 tests verts | OK |
+| Build | 0 avertissement | OK |
+| Contrôle secrets | rien trouvé (52 fichiers) | OK |
+
+Non prouvé : rendu de la barre du navigateur sur téléphone.
+
+Prochain geste : relecture de Luc, git push.
+
 cd ~/best-of && git push

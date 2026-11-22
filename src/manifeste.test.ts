@@ -28,9 +28,9 @@ describe('manifeste de l’appli', () => {
     expect(manifeste.background_color.toUpperCase()).toBe(token('fond'))
     expect(manifeste.theme_color.toUpperCase()).toBe(token('bordeaux'))
   })
-  it('theme-color de index.html égale au token vert-sombre', () => {
+  it('theme-color de index.html égale au token bordeaux', () => {
     const m = /<meta name="theme-color" content="(#[0-9A-Fa-f]{6})"/.exec(lire('index.html'))
-    expect(m?.[1].toUpperCase()).toBe(token('vert-sombre'))
+    expect(m?.[1].toUpperCase()).toBe(token('bordeaux'))
   })
   it('icônes : 192 et 512 « any », 512 « maskable », fichiers présents', () => {
     const par = (taille: string, but: string) => manifeste.icons.find((i) => i.sizes === taille && i.purpose === but)
