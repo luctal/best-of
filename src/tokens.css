@@ -1,0 +1,21 @@
+/* Seul fichier où des couleurs hexadécimales sont autorisées (charte, section 2). */
+@theme {
+  --color-fond: #FBF4EC;
+  --color-fond-2: #F1E7D9; /* survol de ligne : valeur provisoire, non notée dans la charte */
+  --color-vert-sombre: #2D4E28;
+  --color-preuve-robuste: #4E8A64;
+  --color-moss: #2E5C3C;
+  --color-sage: #7EB896;
+  --color-mist: #C1DECE;
+  --color-jaune: #C1B900;
+  --color-ambre: #B87333;
+  --color-gris: #D3D3D3;
+  --color-bleu: #2571A3;
+  --color-bleu-clair: #CFE8F9;
+  --color-rose: #DBB8B5;
+  --color-bordeaux: #86193F;
+  --color-violet: #4F479B;
+  --color-mauve: #B9B5DD;
+  --font-titre: 'Montserrat', sans-serif;
+  --font-texte: 'Barlow', sans-serif;
+}

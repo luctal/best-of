@@ -61,4 +61,38 @@ Non prouvé : le mois d'écoute réel de 2011-2012 ; l'année de « 09-sept ».
 
 Prochain geste : relecture de Luc, puis insertion en base par le chat, puis push.
 
+## Mission BO2c
+
+Écrit : Vite, React, TypeScript, Tailwind par tokens, Vitest, supabase-js, exceljs (chargé à la demande), comme hitster. Logique dans *Logic.ts (calcul, écoute, année, export, admin), rendu dans les .tsx, appels impurs dans deezer.ts, donnees.ts, adminApi.ts, exporter.ts. Workflow GitHub Pages (base /best-of/), icône et manifeste, scripts/controle_secrets.sh. Aucun écrit en base, aucune écriture Deezer, aucun push ; le code admin n'est dans aucun fichier.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Vitest | vert | 67 tests, 9 fichiers | OK |
+| Mutations | une mordante par jeu | 14 mutations, toutes mordent (scripts/mutations_bo2c.sh : score, note, meilleur score, date d'écoute, regroupement, filtre déjà en base, colonnes, tri, rouge, export, admin) | OK |
+| npm run build | sans erreur ni avertissement | 0 | OK |
+| Contrôle secrets | OK | rien trouvé | OK |
+| 390 et 1100 px, Année 2026 | 106 albums ; The Coral en tête 19,94 ; Weezer (Gold Album) 8 / 10 / 15,65 en rouge ; Phoebe Bridgers 6,72 pas en rouge | identique ; règle du rouge juste sur les 106 lignes | OK |
+| Année 2006 | 69 albums, ordre du rang, Beirut premier | identique | OK |
+| Écoute (Deezer réel, bouchon) | 752 titres, environ 8 600 cœurs | 752 titres, 8 605 cœurs | OK |
+| Weezer 989348601 | « déjà en base (même nom) », grisé, non coché | identique | OK |
+| Export (relu par exceljs) | onglet 2026 = 106 lignes, Weezer en rouge, The Coral 19,94 | 21 onglets (2006 à 2026), 106 lignes, Weezer police FF86193F et 15,65 numérique, The Coral 19,94, Phoebe sans couleur, mois en vraie date | OK |
+| Défilement horizontal, boutons | aucun ; >= 44 px | aucun défilement, aucun élément sous 44 px (Année et Écoute, 390 et 1100) | OK |
+| Enregistrement (bouchon) | ajouter_album puis recalculer_annee, bilan, rappel | identique, 1 enregistré, rappel Deezer affiché | OK |
+
+Aperçus de l'écran Écoute (chiffres rendus, sans attendu, meilleur score non connu pour une année absente de la base) :
+- Alabama Shakes, I Must Be Dreaming : 2 cœurs, 11 morceaux, score 0,29, note 3,63, août 2026, pas en base.
+- Erykah Badu, Before The World Blows : 2 cœurs, 15 morceaux, score 0,23, note 2,83, août 2026, pas en base ; écart signalé : 16 titres sur Deezer.
+
+Choix à connaître :
+- Colonnes par année (et non par format_source) : 2006-2007 rang ; 2008-2009 rang, adorés, pas mal ; 2010-2020 artiste, album, note, mois ; 2021 cœurs ; 2022 et après cœurs, morceaux, note. Une année mélange rarement les formats, donc équivalent.
+- Ligne rouge : texte et fond en tokens (bordeaux, rose), pas de rouge pur dans la charte. Dans l'Excel, police bordeaux.
+- Mode admin : on tape sur une ligne pour la modifier ou la supprimer (confirmation dans la fenêtre), pour tenir en 390 px sans colonne de boutons.
+- exceljs pèse 929 ko : chargé à la demande ; limite d'avertissement de Vite relevée à 1200 ko pour ce seul fichier.
+- Année proposée dans Écoute : celle de release_date de Deezer ; vide si Deezer ne répond pas (album non enregistrable tant que l'année manque).
+- Icône : le disque de hitster, repris tel quel.
+
+Non prouvé : l'enregistrement réel et les modifications/suppressions en base (bouchon seulement, par ordre) ; la fenêtre de modification admin n'est pas passée au banc navigateur (tests de la validation seulement) ; le workflow GitHub Pages (jamais lancé, pas de push) ; le recalcul réel par recalculer_annee.
+
+Prochain geste : relecture de Luc, git push, activation de Pages (source : GitHub Actions), puis première saisie réelle du code admin sur l'appareil.
+
 cd ~/best-of && git push

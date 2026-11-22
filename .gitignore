@@ -1,4 +1,8 @@
-*.xlsx
-*.xls
-__pycache__/
+*.log
 *.pyc
+*.xls
+*.xlsx
+.env*
+__pycache__/
+dist
+node_modules
