@@ -187,3 +187,34 @@ Non prouvé : un vrai cœur posé dans l'appli Deezer (au banc, les cœurs sont 
 Prochain geste : relecture de Luc, git push.
 
 cd ~/best-of && git push
+
+## Mission BO3
+
+A. Écran Écoute : un titre de la playlist compte comme aimé si son identifiant est dans les cœurs, ou si un cœur porte sur un titre de même artiste et de même titre normalisés (normaliserNom). Un titre compte une fois, quel que soit le nombre de cœurs correspondants (l'identifiant l'emporte sur la version). deezer.ts garde id, titre et artiste de chaque cœur ; logique pure dans ecouteLogic.ts (titresAimes, coeurDepuisDeezer, libelleAutreVersion ; AlbumEcoute.autreVersion). Même règle à l'ouverture, à Actualiser et à la relecture avant enregistrement (une seule fonction). Aperçu : « 7 cœurs (dont 7 sur une autre version) ». Autre choix : un cœur peut servir à deux titres de la playlist de même artiste et même titre (doublon en playlist) ; non mesuré, aucun cas aujourd'hui.
+B. scripts/bo3/morceaux_2022.mjs (lecture seule, clé publique, Deezer sans clé) écrit scripts/bo3/morceaux_2022.csv ; choix dans src/morceauxLogic.ts. Pour importer le .ts depuis Node : tsconfig allowImportingTsExtensions + import './calculLogic.ts' dans ecouteLogic.ts.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Vitest | vert | 101 tests (81 + 9 A + 11 B) | OK |
+| Mutations A (mutations_bo3.sh) | mordantes | 3 sur 3 (artiste non comparé, jamais apparié, id étiqueté version) | OK |
+| Mutations B (mutations_bo3b.sh) | mordantes | 4 sur 4 (record_type, deluxe, plusieurs exacts dits sûrs, voisin sur un seul champ) | OK |
+| Build | sans avertissement | 0 | OK |
+| Contrôle secrets | OK | rien trouvé (57 fichiers) | OK |
+| Banc 390 et 1100 px (scripts/bo3/banc.mjs, Deezer réel, bouchon) | Laura Cahen 960787671 : cœurs de l'autre version + mention | 7 cœurs (dont 7 sur une autre version), 15 morceaux ; mention sur 1 album, absente des 50 autres ; envoi bouchon coeurs=7 ; pas de défilement horizontal | OK |
+| Mesure A (scripts/bo3/mesure_coeurs.mjs) | Laura Cahen avant / après | 0 -> 7 ; playlist 752 titres, 8 619 cœurs, 59 albums | OK |
+| Albums dont le compte change | liste | 1 : Laura Cahen - Side by side (960787671) 0 -> 7 sur 15 morceaux | OK |
+| B : lignes du CSV | 130 | 130 (ids uniques) | OK |
+| B : confiance | décompte | sur 79, choix 31, approche 7, introuvable 13 | OK |
+| B : coeurs > nb_tracks | signalé | 0 ligne | OK |
+
+Écart à noter : l'ordre annonçait 7 cœurs sur 5 titres cités (Fusées, Les astres, Partout, Quitter la ville, La maison) ; les 7 sont tous sur cet album, qui passe à score 0,80 (7 cœurs / 15 morceaux), note 9,90 au banc.
+
+B, 5 exemples « sur » : 3335 Destroyer, LABYRINTHITIS -> 280059782 (10) ; 3336 Lykke Li, EYEYE -> 301851757 (8) ; 3339 Julia Jacklin, PRE PLEASURE -> 307835537 (10) ; 3341 Tristesse contemporaine, United -> 575431461 (11) ; 3342 Arctic Monkeys, The Car -> 364187517 (10).
+B, « approche » (7) : 3334 Charlotte Adigéry, Bolis Pupul / Topical Dancer -> 261188792 (13, artiste Charlotte Adigéry) ; 3353 Alt-J / Dream -> 903774982 « The Dream » (12) ; 3355 Curren$y, The Alchemist / Continuance -> 294081552 (13, artiste Curren$y) ; 3398 Roc Marciano, The Alchemist / The Elephant Man's Bones -> 345325987 (14) ; 3426 Fred Pallem & Le Sacre Du Tympan / "X" -> 323364027 (10, artiste Fred Pallem) ; 3441 Dawn Richard and Spencer Zahn / Pigments -> 820083431 (11, artiste Dawn Richard) ; 3456 Sam Cohen / Slow Fawn -> 675802421 « Slow Fawn Music No. 1 » (9).
+B, « introuvable » (13) : 3337 Perfume Genious / Ugly Season ; 3350 Mitski / Laurel Hel ; 3361 The Stroopies / Levity ; 3372 C'mon Tigre / Scenario ; 3374 Bill Callahan / REALITY ; 3377 La Fille d'à Côté / Comment j'ai fui la campagne… ; 3385 Gustav / Audio Drag for Ego Slobs ; 3394 Ghost Woman / Ghost Woman ; 3409 VA / Sowal Diabi ; 3424 СОЮЗ / Force of the Wind ; 3453 Esmerine / Everything Was  Forever Until It Was Not More ; 3455 Black Midi / Black Fire ; 3459 Endure / Special Interest. Plusieurs semblent des fautes de saisie en base (« Perfume Genious », « Laurel Hel », double espace) : à relire par Luc.
+
+Non prouvé : 31 « choix » non relus un à un (règle appliquée mécaniquement) ; un vrai cœur posé dans l'appli ; l'enregistrement réel (bouchon seulement). Aucune écriture en base, rien sur S3 ni AWS, aucun push.
+
+Prochain geste : relecture de Luc (CSV, 7 approche, 13 introuvables), puis écritures en base par le chat ; git push.
+
+cd ~/best-of && git push
