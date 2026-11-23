@@ -218,3 +218,38 @@ Non prouvé : 31 « choix » non relus un à un (règle appliquée mécaniquemen
 Prochain geste : relecture de Luc (CSV, 7 approche, 13 introuvables), puis écritures en base par le chat ; git push.
 
 cd ~/best-of && git push
+
+## Mission BO3 bis
+
+Relance de scripts/bo3/morceaux_2022.mjs (lecture seule, aucune écriture en base) après correction des noms en base : 16 albums 2022 encore sans morceaux (130 avant). Le script accepte maintenant un fichier de sortie en argument ; sortie dans scripts/bo3/morceaux_2022_bis.csv, morceaux_2022.csv inchangé.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Lignes | albums 2022 sans morceaux | 16 | OK |
+| Confiance | décompte | sur 4, choix 3, approche 1, introuvable 8 | OK |
+| coeurs > nb_tracks | signalé | 0 ligne | OK |
+| morceaux_2022.csv | non écrasé | inchangé (git) | OK |
+
+Les 16 lignes (id ; artiste ; album ; cœurs ; deezer_album_id ; titre Deezer ; nb_tracks ; confiance) :
+- 3337 ; Perfume Genius ; Ugly Season ; 5 ; 322187757 ; Ugly Season ; 10 ; sur
+- 3349 ; Lady Wray ; Piece of Me ; 4 ; 367468327 ; Piece Of Me (Instrumentals) ; 11 ; choix
+- 3350 ; Mitski ; Laurel Hell ; 4 ; 264172502 ; Laurel Hell ; 11 ; sur
+- 3361 ; The Stroopies ; Levity ; 4 ; introuvable
+- 3372 ; C'mon Tigre ; Scenario ; 4 ; introuvable
+- 3374 ; Bill Callahan ; REALITY ; 4 ; introuvable
+- 3377 ; La Fille d'à Côté ; Comment j'ai fui la campagne avec une fille que j'ai trouvée sur la route ; 4 ; introuvable
+- 3385 ; Gustav ; Audio Drag for Ego Slobs ; 3 ; introuvable
+- 3394 ; Ghost Woman ; Ghost Woman ; 3 ; introuvable
+- 3409 ; VA ; Sowal Diabi ; 2 ; introuvable
+- 3424 ; СОЮЗ ; Force of the Wind ; 2 ; introuvable
+- 3437 ; Kathryn Joseph ; for you who are the wronged ; 1 ; 495817691 ; for you who are the wronged (Lomond Campbell Remixes) ; 5 ; choix
+- 3453 ; Esmerine ; Everything Was Forever Until It Was No More ; 0 ; 314259037 ; Everything Was Forever Until It Was No More ; 9 ; sur
+- 3455 ; Black Midi ; Hellfire ; 0 ; 329841197 ; Hellfire ; 10 ; sur
+- 3456 ; Sam Cohen ; Slow Fawn ; 0 ; 675802421 ; Slow Fawn Music No. 1 ; 9 ; approche
+- 3459 ; Special Interest ; Endure ; 0 ; 502169661 ; Endure (Remixed) ; 6 ; choix
+
+Non prouvé : les 3 « choix » (3349, 3437, 3459) ont retenu une édition remix ou instrumentale, parce que la règle n'écarte que deluxe / expanded / bonus ; leur nb_tracks est probablement celui de l'édition, pas de l'album d'origine : à relire par Luc. Aucune écriture en base, rien sur S3 ni AWS, aucun push.
+
+Prochain geste : relecture de Luc, puis écritures en base par le chat ; git push.
+
+cd ~/best-of && git push

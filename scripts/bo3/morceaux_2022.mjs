@@ -1,7 +1,8 @@
 // BO3 B : nombre de morceaux des albums 2022 sans morceaux, à partir de Deezer. Lecture seule (base : clé publique ; Deezer : sans clé).
 // Aucune écriture en base. Relançable. Sortie : scripts/bo3/morceaux_2022.csv (séparateur ;, UTF-8).
-// Usage : node scripts/bo3/morceaux_2022.mjs   (Node 22 : import direct du .ts)
+// Usage : node scripts/bo3/morceaux_2022.mjs [fichier.csv]   (défaut : morceaux_2022.csv à côté du script ; Node 22 : import direct du .ts)
 import { writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { choisirCandidat, ENTETE_CSV, ligneCsv, remarqueCoherence } from '../../src/morceauxLogic.ts'
 
 const BASE = 'https://vjvqyiaoipwxxnnrzmxt.supabase.co/rest/v1/albums'
@@ -57,5 +58,5 @@ for (const l of lignes) {
   sortie.push(ligneCsv([l.id, l.artiste, l.album, l.coeurs, c?.id, c?.titre, c?.artiste, c?.nbTracks, c?.recordType, choix.confiance, rem.join(' ; ')]))
   console.error(`${l.id} ${choix.confiance}`)
 }
-writeFileSync(new URL('./morceaux_2022.csv', import.meta.url), sortie.join('\n') + '\n', 'utf8')
+writeFileSync(process.argv[2] ? resolve(process.argv[2]) : new URL('./morceaux_2022.csv', import.meta.url), sortie.join('\n') + '\n', 'utf8')
 console.error(`écrit : ${sortie.length - 1} lignes`)
