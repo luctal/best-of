@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AlbumEcoute } from './ecouteLogic'
+import { changementsCoeurs, libelleChangement, libelleMiseAJour, MESSAGE_DEEZER_INJOIGNABLE, preparerEnregistrement, selectionConservee, type LectureDeezer } from './ecouteLogic'
 import { albumsAffiches, libelleMasques, partagerAlbums, anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
 
 const t = (id: number, albumId: number, albumTitre: string, artiste: string, timeAdd: number): TitreDeezer => ({ id, albumId, albumTitre, artiste, timeAdd })
@@ -139,5 +140,51 @@ describe('masquage des albums déjà en base', () => {
     expect(libelleMasques(0)).toBe('0 album déjà en base masqué')
     expect(libelleMasques(1)).toBe('1 album déjà en base masqué')
     expect(libelleMasques(12)).toBe('12 albums déjà en base masqués')
+  })
+})
+
+describe('BO2f : cœurs relus', () => {
+  const alb = (albumId: number, artiste: string, coeurs: number, morceaux = 17): AlbumEcoute => ({ albumId, artiste, titre: 'T', morceaux, coeurs, moisEcoute: null, premierAjout: 1, dernierAjout: 1 })
+  const titresBree = Array.from({ length: 17 }, (_, i) => t(100 + i, 1, 'Don\'t Call It Love', 'Jonathan Bree', J))
+  const lecture = (aimes: number[]): LectureDeezer => ({ lus: titresBree.length, titres: titresBree, coeurs: new Set(aimes) })
+
+  it('changementsCoeurs : liste les albums dont le nombre change', () => {
+    expect(changementsCoeurs([alb(1, 'Jonathan Bree', 2), alb(2, 'X', 3)], [alb(1, 'Jonathan Bree', 5), alb(2, 'X', 3)])).toEqual([{ albumId: 1, artiste: 'Jonathan Bree', avant: 2, apres: 5 }])
+  })
+  it('changementsCoeurs : rien si identique', () => {
+    expect(changementsCoeurs([alb(1, 'A', 2)], [alb(1, 'A', 2)])).toEqual([])
+  })
+  it('libelleChangement : « Jonathan Bree : 2 → 5 cœurs »', () => {
+    expect(libelleChangement({ albumId: 1, artiste: 'Jonathan Bree', avant: 2, apres: 5 })).toBe('Jonathan Bree : 2 → 5 cœurs')
+    expect(libelleChangement({ albumId: 1, artiste: 'A', avant: 2, apres: 1 })).toBe('A : 2 → 1 cœur')
+  })
+  it('selectionConservee : garde les albums encore présents, retire les autres', () => {
+    expect([...selectionConservee(new Set([1, 2, 3]), [alb(1, 'A', 0), alb(3, 'B', 0)])].sort()).toEqual([1, 3])
+  })
+  it('libelleMiseAJour : heure de Paris HH:MM', () => {
+    expect(libelleMiseAJour(new Date(Date.UTC(2026, 10, 23, 8, 5)))).toBe('Mis à jour à 09:05')
+    expect(libelleMiseAJour(new Date(Date.UTC(2026, 6, 23, 8, 5)))).toBe('Mis à jour à 10:05')
+  })
+  it('preparerEnregistrement : recalcule avec les cœurs relus et signale le changement', async () => {
+    const p = await preparerEnregistrement([alb(1, 'Jonathan Bree', 2)], async () => lecture([100, 101, 102, 103, 104]))
+    expect(p.ok).toBe(true)
+    if (!p.ok) return
+    expect(p.albums[0].coeurs).toBe(5)
+    expect(p.changements.map(libelleChangement)).toEqual(['Jonathan Bree : 2 → 5 cœurs'])
+    const l = ligneAEnregistrer(p.albums[0], { titre: 'T', annee: 2026 }, 6, 17)
+    expect(l?.coeurs).toBe(5)
+  })
+  it('preparerEnregistrement : Deezer injoignable = échec, rien à enregistrer', async () => {
+    const p = await preparerEnregistrement([alb(1, 'A', 2)], async () => { throw new Error('timeout') })
+    expect(p).toEqual({ ok: false, message: MESSAGE_DEEZER_INJOIGNABLE })
+    expect(MESSAGE_DEEZER_INJOIGNABLE).toBe('Connexion à Deezer impossible, réessaie.')
+  })
+  it('preparerEnregistrement : album coché absent de la playlist relue = jamais enregistré', async () => {
+    const p = await preparerEnregistrement([alb(1, 'A', 2), alb(9, 'Disparu', 4)], async () => lecture([100]))
+    expect(p.ok).toBe(true)
+    if (!p.ok) return
+    expect(p.albums.map((a) => a.albumId)).toEqual([1])
+    expect(p.absents.map((a) => a.albumId)).toEqual([9])
+    expect(p.changements).toHaveLength(1)
   })
 })

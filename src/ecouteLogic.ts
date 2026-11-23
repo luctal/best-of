@@ -195,3 +195,75 @@ export function messageMeilleur(annee: number, avant: number | null, apres: numb
   if (avant !== null && Math.abs(avant - apres) < 1e-9) return null
   return `Nouveau meilleur score ${annee} : ${apres.toFixed(2).replace('.', ',')}, notes de l'année recalculées`
 }
+
+// ---- BO2f : cœurs relus avant enregistrement ----
+
+// Ce que rend une lecture complète de Deezer (playlist + cœurs).
+export interface LectureDeezer {
+  lus: number // titres lus dans la playlist
+  titres: TitreDeezer[] // titres avec album
+  coeurs: ReadonlySet<number>
+}
+
+export type Lecteur = () => Promise<LectureDeezer>
+
+export interface ChangementCoeurs {
+  albumId: number
+  artiste: string
+  avant: number
+  apres: number
+}
+
+// Albums dont le nombre de cœurs diffère entre l'état affiché et l'état relu.
+export function changementsCoeurs(avant: readonly AlbumEcoute[], apres: readonly AlbumEcoute[]): ChangementCoeurs[] {
+  const anciens = new Map(avant.map((a) => [a.albumId, a]))
+  const sortie: ChangementCoeurs[] = []
+  for (const n of apres) {
+    const o = anciens.get(n.albumId)
+    if (o && o.coeurs !== n.coeurs) sortie.push({ albumId: n.albumId, artiste: n.artiste, avant: o.coeurs, apres: n.coeurs })
+  }
+  return sortie
+}
+
+export function libelleChangement(c: ChangementCoeurs): string {
+  return `${c.artiste} : ${c.avant} → ${c.apres} cœur${c.apres > 1 ? 's' : ''}`
+}
+
+// Cases cochées conservées : seulement les albums encore présents dans la lecture.
+export function selectionConservee(selection: ReadonlySet<number>, albums: readonly AlbumEcoute[]): Set<number> {
+  const presents = new Set(albums.map((a) => a.albumId))
+  return new Set([...selection].filter((id) => presents.has(id)))
+}
+
+export const MESSAGE_LECTURE = 'Lecture de Deezer en cours…'
+export const MESSAGE_DEEZER_INJOIGNABLE = 'Connexion à Deezer impossible, réessaie.'
+
+// « Mis à jour à HH:MM », heure de Paris.
+export function libelleMiseAJour(quand: Date): string {
+  const h = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(quand)
+  return `Mis à jour à ${h}`
+}
+
+export type Preparation =
+  | { ok: true; albums: AlbumEcoute[]; absents: AlbumEcoute[]; changements: ChangementCoeurs[] }
+  | { ok: false; message: string }
+
+// Relit Deezer, recalcule les albums cochés. Si Deezer ne répond pas : échec, rien à enregistrer.
+// Les albums cochés absents de la playlist relue sont rendus à part (jamais enregistrés avec une valeur périmée).
+export async function preparerEnregistrement(coches: readonly AlbumEcoute[], lecteur: Lecteur): Promise<Preparation> {
+  let lecture: LectureDeezer
+  try {
+    lecture = await lecteur()
+  } catch {
+    return { ok: false, message: MESSAGE_DEEZER_INJOIGNABLE }
+  }
+  const frais = new Map(regrouperParAlbum(lecture.titres, lecture.coeurs).map((a) => [a.albumId, a]))
+  const albums: AlbumEcoute[] = []
+  const absents: AlbumEcoute[] = []
+  for (const a of coches) {
+    const n = frais.get(a.albumId)
+    if (n) albums.push(n)
+    else absents.push(a)
+  }
+  return { ok: true, albums, absents, changements: changementsCoeurs(coches.filter((a) => frais.has(a.albumId)), albums) }
+}

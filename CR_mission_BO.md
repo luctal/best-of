@@ -163,3 +163,27 @@ Non prouvé : rendu de la barre du navigateur sur téléphone.
 Prochain geste : relecture de Luc, git push.
 
 cd ~/best-of && git push
+
+## Mission BO2f
+
+Écran Écoute : bouton « Actualiser » en haut (44 px), cœurs relus avant chaque enregistrement. Logique pure dans ecouteLogic.ts (preparerEnregistrement, changementsCoeurs, libelleChangement, selectionConservee, libelleMiseAJour) ; lecture réseau dans deezer.ts (lireEcoute). « Actualiser » relit playlist et cœurs, ne relit que les fiches d'albums nouvelles, garde les cases cochées des albums encore présents, affiche « Lecture de Deezer en cours… » (bouton inactif) puis « Mis à jour à HH:MM » (heure de Paris). « Enregistrer la sélection » relit d'abord Deezer et enregistre les valeurs relues ; un changement est dit au bilan (« Jonathan Bree : 2 → 5 cœurs ») ; Deezer injoignable : rien enregistré, « Connexion à Deezer impossible, réessaie. » ; un album coché disparu de la playlist n'est jamais enregistré (échec signalé). Lignes Jonathan Bree et Dynamite Shakers en base : non touchées.
+
+| Critère | Attendu | Mesuré | Verdict |
+|---|---|---|---|
+| Vitest | vert | 81 tests (73 + 8) | OK |
+| Mutations (scripts/mutations_bo2f.sh) | mordantes | 4 sur 4 : cœurs périmés gardés (2 tests rouges), Deezer injoignable ignoré (1), changement signalé à tort (4), cases perdues (1) | OK |
+| npm run build | sans avertissement | 0 | OK |
+| Contrôle secrets | OK | rien trouvé (52 fichiers) | OK |
+| Banc 390 et 1100 px (scripts/bo2f/banc.mjs, Deezer réel, cœurs modifiés au vol, bouchon) | « Actualiser » relit, nombre de titres et de cœurs affiché | 752 titres, 8611 -> 8612 cœurs, cible Dalí « Horse » 0 -> 1 cœur, case gardée, « Mis à jour à HH:MM » | OK |
+| Banc : pendant la lecture | « Lecture de Deezer en cours… », bouton inactif | oui, aux deux largeurs | OK |
+| Banc : enregistrement | le bouchon reçoit les cœurs relus | reçu 1 (affiché 0), bilan « Dalí : 0 → 1 cœur » | OK |
+| Banc : Deezer coupé à l'enregistrement | message, aucun appel bouchon | message exact, appels 2 -> 2 | OK |
+| Banc : ergonomie | pas de défilement horizontal, boutons >= 44 px | 390/390 et 1100/1100, aucun bouton plus petit | OK |
+
+Version à autre identifiant (scripts/bo2f/mesure_versions.mjs, lecture seule, sans correction) : sur les deux albums de Luc, aucun cœur ne porte sur une autre version ; Jonathan Bree, Don't Call It Love (album 962304461) : 17 titres, 5 cœurs comptés par identifiant ; Dynamite Shakers, MARILYN (album 1017145631) : 14 titres, 4 cœurs. Deezer donne bien 5 et 4 aujourd'hui : la cause est la lecture unique à l'ouverture, pas le comptage. Le cas existe pourtant ailleurs : 7 cœurs sur 8 611 portent sur un titre de la playlist sous un autre identifiant (autre album). Exemple mesuré : Laura Cahen, « Fusées » : cœur sur le titre 3036012691 (album 653837601), titre en playlist 3958682631 (album 960787671) ; idem « Les astres », « Partout », « Quitter la ville », « La maison ». Ces cœurs ne sont pas comptés pour l'album de la playlist. Non corrigé.
+
+Non prouvé : un vrai cœur posé dans l'appli Deezer (au banc, les cœurs sont modifiés au vol par interception) ; l'enregistrement réel (bouchon seulement). Aucun push, rien sur S3 ni AWS.
+
+Prochain geste : relecture de Luc, git push.
+
+cd ~/best-of && git push

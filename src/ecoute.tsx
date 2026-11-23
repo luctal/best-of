@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Api } from './adminApi'
 import { formaterMois, formaterNombre } from './calculLogic'
-import { lireCoeurs, lireFichesAlbums, lirePlaylistTitres, PLAYLIST_ECOUTE, PROFIL_COEURS, type FicheAlbum } from './deezer'
-import { albumsAffiches, anneeEnCours, apercu, dejaEnBase, indexerBase, libelleMasques, ligneAEnregistrer, messageMeilleur, partagerAlbums, regrouperParAlbum, type AlbumEcoute } from './ecouteLogic'
+import { lireEcoute, lireFichesAlbums, type FicheAlbum } from './deezer'
+import { albumsAffiches, anneeEnCours, apercu, dejaEnBase, indexerBase, libelleChangement, libelleMasques, libelleMiseAJour, ligneAEnregistrer, MESSAGE_LECTURE, messageMeilleur, partagerAlbums, preparerEnregistrement, regrouperParAlbum, selectionConservee, type AlbumEcoute } from './ecouteLogic'
 import { traduireErreur } from './erreursLogic'
 import type { AlbumLeger } from './types'
 
@@ -32,6 +32,18 @@ interface Echec {
   message: string
 }
 
+// Lecture complète de Deezer ; les fiches déjà connues sont gardées, seules les nouvelles sont lues.
+async function lireTout(surEtape: (t: string) => void, connues: Map<number, FicheAlbum>): Promise<Lecture> {
+  const pl = await lireEcoute(surEtape)
+  const albums = regrouperParAlbum(pl.titres, pl.coeurs)
+  const manquantes = albums.map((a) => a.albumId).filter((id) => !connues.has(id))
+  surEtape(`Fiches des ${manquantes.length} albums…`)
+  const neuves = await lireFichesAlbums(manquantes, (f, t) => surEtape(`Fiches des albums : ${f} sur ${t}…`))
+  const fiches = new Map(connues)
+  for (const [id, f] of neuves) fiches.set(id, f)
+  return { titresLus: pl.lus, titresAvecAlbum: pl.titres.length, coeursLus: pl.coeursLus, albums, fiches }
+}
+
 const champ = 'min-h-11 w-full rounded-lg border border-sage bg-fond px-3 text-base'
 
 export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
@@ -47,6 +59,11 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
   const [essai, setEssai] = useState(0)
   const [enregistres, setEnregistres] = useState<Set<number>>(new Set())
   const [montrerMasques, setMontrerMasques] = useState(false)
+  const [actualisation, setActualisation] = useState(false)
+  const [majA, setMajA] = useState<string | null>(null)
+  const [erreurActu, setErreurActu] = useState<string | null>(null)
+  const [erreurEnr, setErreurEnr] = useState<string | null>(null)
+  const [changements, setChangements] = useState<string[]>([])
 
   useEffect(() => {
     let actif = true
@@ -54,15 +71,10 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
     setLecture(null)
     ;(async () => {
       try {
-        setEtape('Lecture de la playlist…')
-        const pl = await lirePlaylistTitres(PLAYLIST_ECOUTE, (n) => actif && setEtape(`Lecture de la playlist : ${n} titres…`))
-        setEtape('Lecture des cœurs…')
-        const coeurs = await lireCoeurs(PROFIL_COEURS, (n) => actif && setEtape(`Lecture des cœurs : ${n}…`))
-        const albums = regrouperParAlbum(pl.titres, coeurs.ids)
-        setEtape(`Fiches des ${albums.length} albums…`)
-        const fiches = await lireFichesAlbums(albums.map((a) => a.albumId), (f, t) => actif && setEtape(`Fiches des albums : ${f} sur ${t}…`))
+        const l = await lireTout((t) => actif && setEtape(t), new Map())
         if (!actif) return
-        setLecture({ titresLus: pl.lus, titresAvecAlbum: pl.titres.length, coeursLus: coeurs.ids.size, albums, fiches })
+        setLecture(l)
+        setMajA(libelleMiseAJour(new Date()))
       } catch (e) {
         if (actif) setErreur(traduireErreur(e))
       }
@@ -104,15 +116,41 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
       return n
     })
 
+  async function actualiser() {
+    if (!lecture || actualisation || occupe) return
+    setActualisation(true)
+    setErreurActu(null)
+    try {
+      const l = await lireTout(() => undefined, lecture.fiches)
+      setLecture(l)
+      setSelection((s) => selectionConservee(s, l.albums))
+      setMajA(libelleMiseAJour(new Date()))
+    } catch (e) {
+      setErreurActu(traduireErreur(e))
+    }
+    setActualisation(false)
+  }
+
   async function enregistrer() {
     if (!lecture) return
     setOccupe(true)
     setMessages([])
     setBilan(null)
-    const nouveauxEchecs: Echec[] = []
+    setChangements([])
+    setErreurEnr(null)
+    // Les cœurs sont relus sur Deezer juste avant d'écrire : jamais de valeur périmée.
+    const prep = await preparerEnregistrement(aEnregistrer, () => lireEcoute())
+    if (!prep.ok) {
+      setEchecs([])
+      setErreurEnr(prep.message)
+      setOccupe(false)
+      return
+    }
+    setChangements(prep.changements.map(libelleChangement))
+    const nouveauxEchecs: Echec[] = prep.absents.map((a) => ({ albumId: a.albumId, nom: `${a.artiste} - ${a.titre}`, message: 'Album absent de la playlist relue.' }))
     const reussis: number[] = []
     const annees = new Set<number>()
-    for (const a of aEnregistrer) {
+    for (const a of prep.albums) {
       const ed = edition(a)
       const ligne = ligneAEnregistrer(a, { titre: ed.titre, annee: anneeNum(ed) }, meilleurs[anneeNum(ed) ?? 0] ?? null, nbTracks(a))
       if (!ligne) {
@@ -152,6 +190,11 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
 
   return (
     <section className="pb-28">
+      <div className="mb-3 flex flex-wrap items-center gap-3">
+        <button type="button" data-testid="actualiser" className="min-h-11 rounded-xl bg-vert-sombre px-5 font-titre font-semibold text-fond disabled:opacity-50" disabled={actualisation || occupe} onClick={actualiser}>Actualiser</button>
+        <span className="text-sm font-semibold" role="status" data-testid="maj">{actualisation ? MESSAGE_LECTURE : (majA ?? '')}</span>
+      </div>
+      {erreurActu && <p className="mb-3 rounded-lg bg-bordeaux/10 p-3 text-bordeaux" role="alert" data-testid="erreur-lecture">{erreurActu}</p>}
       <p className="mb-3 text-sm" data-testid="lecture">
         <span data-testid="nb-titres">{lecture.titresLus}</span> titres lus dans la playlist, <span data-testid="nb-coeurs">{lecture.coeursLus}</span> cœurs lus, {lecture.albums.length} albums.
       </p>
@@ -198,7 +241,9 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
       </ul>
       <div className="fixed inset-x-0 bottom-0 border-t border-sage bg-fond p-3">
         <div className="mx-auto max-w-5xl space-y-2">
+          {erreurEnr && <p className="font-semibold text-bordeaux" role="alert" data-testid="erreur-enregistrement">{erreurEnr}</p>}
           {bilan && <p className="font-semibold" role="status" data-testid="bilan">{bilan}</p>}
+          {changements.map((c) => <p key={c} className="text-sm font-semibold" role="status" data-testid="changement">{c}</p>)}
           {messages.map((m) => <p key={m} className="font-semibold text-moss" role="status">{m}</p>)}
           {bilan && <p className="text-sm">Tu peux maintenant retirer ces albums de la playlist Deezer.</p>}
           {echecs.map((e, i) => <p key={`${e.albumId}-${i}`} className="text-sm text-bordeaux" role="alert">Échec : {e.nom} : {e.message}</p>)}
