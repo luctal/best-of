@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { AlbumEcoute } from './ecouteLogic'
-import { changementsCoeurs, libelleChangement, libelleMiseAJour, MESSAGE_DEEZER_INJOIGNABLE, preparerEnregistrement, selectionConservee, type LectureDeezer } from './ecouteLogic'
+import { coeurDepuisDeezer, libelleAutreVersion, titresAimes, changementsCoeurs, libelleChangement, libelleMiseAJour, MESSAGE_DEEZER_INJOIGNABLE, preparerEnregistrement, selectionConservee, type LectureDeezer } from './ecouteLogic'
 import { albumsAffiches, libelleMasques, partagerAlbums, anneeEnCours, apercu, dejaEnBase, indexerBase, ligneAEnregistrer, messageMeilleur, normaliserNom, regrouperParAlbum, titreDepuisDeezer, type TitreDeezer } from './ecouteLogic'
 
-const t = (id: number, albumId: number, albumTitre: string, artiste: string, timeAdd: number): TitreDeezer => ({ id, albumId, albumTitre, artiste, timeAdd })
+const t = (id: number, albumId: number, albumTitre: string, artiste: string, timeAdd: number): TitreDeezer => ({ id, titre: `titre ${id}`, albumId, albumTitre, artiste, timeAdd })
 const J = 86400
 
 describe('titreDepuisDeezer', () => {
   it('garde id, album, artiste, time_add', () => {
-    expect(titreDepuisDeezer({ id: 1, time_add: 5, artist: { name: 'A' }, album: { id: 9, title: 'T' } })).toEqual({ id: 1, artiste: 'A', albumId: 9, albumTitre: 'T', timeAdd: 5 })
+    expect(titreDepuisDeezer({ id: 1, title: 'Ti', time_add: 5, artist: { name: 'A' }, album: { id: 9, title: 'T' } })).toEqual({ id: 1, titre: 'Ti', artiste: 'A', albumId: 9, albumTitre: 'T', timeAdd: 5 })
   })
   it('refuse un titre sans album ou sans id', () => {
     expect(titreDepuisDeezer({ id: 1, album: {} })).toBeNull()
@@ -20,20 +20,20 @@ describe('titreDepuisDeezer', () => {
 describe('regrouperParAlbum', () => {
   const titres = [t(1, 10, 'Zeta', 'X', 3 * J), t(2, 20, 'Alpha', 'Y', 1 * J), t(3, 10, 'Zeta', 'X', 4 * J), t(4, 20, 'Alpha', 'Y', 2 * J), t(5, 20, 'Alpha', 'Y', 9 * J)]
   it('un groupe par album.id, avec morceaux et cœurs', () => {
-    const r = regrouperParAlbum(titres, new Set([2, 3, 5]))
+    const r = regrouperParAlbum(titres, new Map<number, 'id' | 'version'>([[2, 'id'], [3, 'id'], [5, 'id']]))
     expect(r.map((a) => [a.albumId, a.morceaux, a.coeurs])).toEqual([[20, 3, 2], [10, 2, 1]])
   })
   it('du plus ancien ajout au plus récent', () => {
-    const r = regrouperParAlbum(titres, new Set())
+    const r = regrouperParAlbum(titres, new Map())
     expect(r.map((a) => a.albumId)).toEqual([20, 10])
     expect(r[0].premierAjout).toBeLessThan(r[1].premierAjout)
   })
   it('deux albums de même titre restent séparés (jamais par le titre)', () => {
-    const r = regrouperParAlbum([t(1, 1, 'Live', 'A', J), t(2, 2, 'Live', 'A', 2 * J)], new Set())
+    const r = regrouperParAlbum([t(1, 1, 'Live', 'A', J), t(2, 2, 'Live', 'A', 2 * J)], new Map())
     expect(r).toHaveLength(2)
   })
   it('mois d\'écoute = mois du plus ancien ajout', () => {
-    const r = regrouperParAlbum([t(1, 1, 'X', 'A', Date.UTC(2026, 8, 3) / 1000), t(2, 1, 'X', 'A', Date.UTC(2026, 7, 22) / 1000)], new Set())
+    const r = regrouperParAlbum([t(1, 1, 'X', 'A', Date.UTC(2026, 8, 3) / 1000), t(2, 1, 'X', 'A', Date.UTC(2026, 7, 22) / 1000)], new Map())
     expect(r[0].moisEcoute).toBe('2026-08-01')
   })
 })
@@ -68,7 +68,7 @@ describe('dejaEnBase', () => {
 })
 
 describe('apercu et ligneAEnregistrer', () => {
-  const a = { albumId: 5, artiste: 'Weezer', titre: 'Weezer', morceaux: 10, coeurs: 8, moisEcoute: '2026-08-01', premierAjout: 1, dernierAjout: 1 }
+  const a = { albumId: 5, artiste: 'Weezer', titre: 'Weezer', morceaux: 10, coeurs: 8, autreVersion: 0, moisEcoute: '2026-08-01', premierAjout: 1, dernierAjout: 1 }
   it('Weezer : score 1,268, note 15,65 avec le meilleur de la base', () => {
     const ap = apercu(a, 1.62, 10)
     expect(ap.score).toBeCloseTo(1.2679, 4)
@@ -118,7 +118,7 @@ describe('masquage des albums déjà en base', () => {
     { artiste: 'Weezer', album: 'Weezer (Gold Album)', deezer_album_id: null },
     { artiste: 'Autre', album: 'Sans id', deezer_album_id: 777 },
   ])
-  const alb = (albumId: number, artiste: string, titre: string): AlbumEcoute => ({ albumId, artiste, titre, morceaux: 1, coeurs: 0, moisEcoute: null, premierAjout: albumId, dernierAjout: albumId })
+  const alb = (albumId: number, artiste: string, titre: string): AlbumEcoute => ({ albumId, artiste, titre, morceaux: 1, coeurs: 0, autreVersion: 0, moisEcoute: null, premierAjout: albumId, dernierAjout: albumId })
   const albums = [alb(989348601, 'Weezer', 'Weezer'), alb(777, 'X', 'Y'), alb(1, 'Alabama Shakes', 'Nouveau'), alb(2, 'Erykah Badu', 'Autre')]
   it('masque par nom et par identifiant, compte les albums à traiter', () => {
     const p = partagerAlbums(albums, index, new Set())
@@ -144,9 +144,9 @@ describe('masquage des albums déjà en base', () => {
 })
 
 describe('BO2f : cœurs relus', () => {
-  const alb = (albumId: number, artiste: string, coeurs: number, morceaux = 17): AlbumEcoute => ({ albumId, artiste, titre: 'T', morceaux, coeurs, moisEcoute: null, premierAjout: 1, dernierAjout: 1 })
+  const alb = (albumId: number, artiste: string, coeurs: number, morceaux = 17): AlbumEcoute => ({ albumId, artiste, titre: 'T', morceaux, coeurs, autreVersion: 0, moisEcoute: null, premierAjout: 1, dernierAjout: 1 })
   const titresBree = Array.from({ length: 17 }, (_, i) => t(100 + i, 1, 'Don\'t Call It Love', 'Jonathan Bree', J))
-  const lecture = (aimes: number[]): LectureDeezer => ({ lus: titresBree.length, titres: titresBree, coeurs: new Set(aimes) })
+  const lecture = (aimes: number[]): LectureDeezer => ({ lus: titresBree.length, titres: titresBree, coeurs: aimes.map((id) => ({ id, titre: '', artiste: '' })) })
 
   it('changementsCoeurs : liste les albums dont le nombre change', () => {
     expect(changementsCoeurs([alb(1, 'Jonathan Bree', 2), alb(2, 'X', 3)], [alb(1, 'Jonathan Bree', 5), alb(2, 'X', 3)])).toEqual([{ albumId: 1, artiste: 'Jonathan Bree', avant: 2, apres: 5 }])
@@ -186,5 +186,46 @@ describe('BO2f : cœurs relus', () => {
     expect(p.albums.map((a) => a.albumId)).toEqual([1])
     expect(p.absents.map((a) => a.albumId)).toEqual([9])
     expect(p.changements).toHaveLength(1)
+  })
+})
+
+describe('BO3 : cœurs sur une autre version', () => {
+  const titre = (id: number, albumId: number, artiste: string, nom: string): TitreDeezer => ({ id, titre: nom, artiste, albumId, albumTitre: 'A', timeAdd: J })
+  const coeur = (id: number, artiste: string, nom: string) => ({ id, artiste, titre: nom })
+  const pl = [titre(1, 10, 'Laura Cahen', 'Fusées')]
+
+  it('même identifiant : compté, sans mention « autre version »', () => {
+    expect(titresAimes(pl, [coeur(1, 'Laura Cahen', 'Fusées')]).get(1)).toBe('id')
+  })
+  it('autre version : même artiste, même titre normalisé (casse, accents, parenthèses)', () => {
+    const m = titresAimes(pl, [coeur(99, 'LAURA CAHEN', 'fusees (Remastered 2022)')])
+    expect(m.get(1)).toBe('version')
+    const a = regrouperParAlbum(pl, m)
+    expect([a[0].coeurs, a[0].autreVersion]).toEqual([1, 1])
+  })
+  it('artiste différent : non compté', () => {
+    expect(titresAimes(pl, [coeur(99, 'Autre Artiste', 'Fusées')]).has(1)).toBe(false)
+  })
+  it('titre différent : non compté', () => {
+    expect(titresAimes(pl, [coeur(99, 'Laura Cahen', 'Les astres')]).has(1)).toBe(false)
+  })
+  it('deux cœurs sur le même titre : un seul', () => {
+    const m = titresAimes(pl, [coeur(98, 'Laura Cahen', 'Fusées'), coeur(99, 'Laura Cahen', 'Fusées (Live)')])
+    expect(regrouperParAlbum(pl, m)[0].coeurs).toBe(1)
+  })
+  it('l\'identifiant l\'emporte sur la version', () => {
+    const m = titresAimes(pl, [coeur(1, 'Laura Cahen', 'Fusées'), coeur(99, 'Laura Cahen', 'Fusées')])
+    expect(m.get(1)).toBe('id')
+  })
+  it('titre vide : jamais apparié', () => {
+    expect(titresAimes([titre(1, 10, 'A', '')], [coeur(99, 'A', '')]).size).toBe(0)
+  })
+  it('coeurDepuisDeezer garde id, titre, artiste ; refuse sans id', () => {
+    expect(coeurDepuisDeezer({ id: 5, title: 'T', artist: { name: 'X' } })).toEqual({ id: 5, titre: 'T', artiste: 'X' })
+    expect(coeurDepuisDeezer({ title: 'T' })).toBeNull()
+  })
+  it('libelleAutreVersion', () => {
+    expect(libelleAutreVersion(2)).toBe('dont 2 sur une autre version')
+    expect(libelleAutreVersion(0)).toBe('')
   })
 })

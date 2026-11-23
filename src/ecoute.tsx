@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { Api } from './adminApi'
 import { formaterMois, formaterNombre } from './calculLogic'
 import { lireEcoute, lireFichesAlbums, type FicheAlbum } from './deezer'
-import { albumsAffiches, anneeEnCours, apercu, dejaEnBase, indexerBase, libelleChangement, libelleMasques, libelleMiseAJour, ligneAEnregistrer, MESSAGE_LECTURE, messageMeilleur, partagerAlbums, preparerEnregistrement, regrouperParAlbum, selectionConservee, type AlbumEcoute } from './ecouteLogic'
+import { albumsAffiches, anneeEnCours, apercu, dejaEnBase, indexerBase, libelleChangement, libelleMasques, libelleAutreVersion, libelleMiseAJour, ligneAEnregistrer, MESSAGE_LECTURE, messageMeilleur, partagerAlbums, preparerEnregistrement, regrouperParAlbum, selectionConservee, titresAimes, type AlbumEcoute } from './ecouteLogic'
 import { traduireErreur } from './erreursLogic'
 import type { AlbumLeger } from './types'
 
@@ -35,7 +35,7 @@ interface Echec {
 // Lecture complète de Deezer ; les fiches déjà connues sont gardées, seules les nouvelles sont lues.
 async function lireTout(surEtape: (t: string) => void, connues: Map<number, FicheAlbum>): Promise<Lecture> {
   const pl = await lireEcoute(surEtape)
-  const albums = regrouperParAlbum(pl.titres, pl.coeurs)
+  const albums = regrouperParAlbum(pl.titres, titresAimes(pl.titres, pl.coeurs))
   const manquantes = albums.map((a) => a.albumId).filter((id) => !connues.has(id))
   surEtape(`Fiches des ${manquantes.length} albums…`)
   const neuves = await lireFichesAlbums(manquantes, (f, t) => surEtape(`Fiches des albums : ${f} sur ${t}…`))
@@ -222,7 +222,7 @@ export function Ecoute({ legers, meilleurs, api, surChange }: Props) {
                 </span>
               </label>
               <p className="mt-1 text-sm" data-testid="apercu">
-                {ap.coeurs} cœurs · {ap.morceaux} morceaux · score {formaterNombre(ap.score, 2)} · note {formaterNombre(ap.note, 2)} · {formaterMois(ap.mois) || 'mois inconnu'}
+                {ap.coeurs} cœurs{a.autreVersion > 0 && <span data-testid="autre-version"> ({libelleAutreVersion(a.autreVersion)})</span>} · {ap.morceaux} morceaux · score {formaterNombre(ap.score, 2)} · note {formaterNombre(ap.note, 2)} · {formaterMois(ap.mois) || 'mois inconnu'}
                 {ap.ecart && <span className="ml-2 text-ambre">écart : {nbTracks(a)} titres sur Deezer</span>}
               </p>
               {selection.has(a.albumId) && (

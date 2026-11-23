@@ -1,10 +1,11 @@
 // Écran « Écoute » : regroupement des titres de la playlist par album.id, filtre « déjà en base », lignes à enregistrer.
 // Sans React, sans DOM, sans réseau.
-import { ecartNbTracks, meilleurScore, moisEcoute, note, score } from './calculLogic'
+import { ecartNbTracks, meilleurScore, moisEcoute, note, score } from './calculLogic.ts'
 import type { AlbumLeger } from './types'
 
 export interface TitreDeezer {
   id: number
+  titre: string
   artiste: string
   albumId: number
   albumTitre: string
@@ -13,6 +14,7 @@ export interface TitreDeezer {
 
 export interface PisteBrute {
   id?: number
+  title?: string
   time_add?: number
   artist?: { name?: string }
   album?: { id?: number; title?: string }
@@ -21,7 +23,7 @@ export interface PisteBrute {
 // Titre de playlist Deezer -> titre exploitable ; null s'il n'a pas d'identifiant ou pas d'album.
 export function titreDepuisDeezer(p: PisteBrute | null | undefined): TitreDeezer | null {
   if (!p || typeof p.id !== 'number' || typeof p.album?.id !== 'number') return null
-  return { id: p.id, artiste: p.artist?.name ?? '', albumId: p.album.id, albumTitre: p.album.title ?? '', timeAdd: typeof p.time_add === 'number' ? p.time_add : 0 }
+  return { id: p.id, titre: p.title ?? '', artiste: p.artist?.name ?? '', albumId: p.album.id, albumTitre: p.album.title ?? '', timeAdd: typeof p.time_add === 'number' ? p.time_add : 0 }
 }
 
 export interface AlbumEcoute {
@@ -30,13 +32,56 @@ export interface AlbumEcoute {
   titre: string
   morceaux: number // titres de l'album présents dans la playlist
   coeurs: number
+  autreVersion: number // parmi les cœurs, ceux posés sur une autre version du titre (autre identifiant Deezer)
   moisEcoute: string | null // AAAA-MM-01
   premierAjout: number
   dernierAjout: number
 }
 
+// Un cœur lu sur le profil Deezer.
+export interface CoeurDeezer {
+  id: number
+  titre: string
+  artiste: string
+}
+
+export interface CoeurBrut {
+  id?: number
+  title?: string
+  artist?: { name?: string }
+}
+
+// Cœur Deezer brut -> cœur exploitable ; null s'il n'a pas d'identifiant.
+export function coeurDepuisDeezer(p: CoeurBrut | null | undefined): CoeurDeezer | null {
+  if (!p || typeof p.id !== 'number') return null
+  return { id: p.id, titre: p.title ?? '', artiste: p.artist?.name ?? '' }
+}
+
+// Titres de la playlist comptés comme aimés : « id » = leur identifiant est dans les cœurs ; « version » = un cœur porte
+// sur un titre de même artiste et de même titre normalisés (autre version). Un titre compte une seule fois, quel que
+// soit le nombre de cœurs qui lui correspondent.
+export type Aimes = ReadonlyMap<number, 'id' | 'version'>
+
+export function titresAimes(titres: readonly TitreDeezer[], coeurs: readonly CoeurDeezer[]): Aimes {
+  const ids = new Set(coeurs.map((c) => c.id))
+  const cles = new Set<string>()
+  for (const c of coeurs) {
+    const titre = normaliserNom(c.titre)
+    if (titre !== '') cles.add(`${normaliserNom(c.artiste)}|${titre}`)
+  }
+  const sortie = new Map<number, 'id' | 'version'>()
+  for (const t of titres) {
+    if (ids.has(t.id)) sortie.set(t.id, 'id')
+    else {
+      const titre = normaliserNom(t.titre)
+      if (titre !== '' && cles.has(`${normaliserNom(t.artiste)}|${titre}`)) sortie.set(t.id, 'version')
+    }
+  }
+  return sortie
+}
+
 // Regroupe par album.id (jamais par titre), du plus ancien ajout au plus récent.
-export function regrouperParAlbum(titres: readonly TitreDeezer[], aimes: ReadonlySet<number>): AlbumEcoute[] {
+export function regrouperParAlbum(titres: readonly TitreDeezer[], aimes: Aimes): AlbumEcoute[] {
   const groupes = new Map<number, TitreDeezer[]>()
   for (const t of titres) {
     const g = groupes.get(t.albumId)
@@ -55,12 +100,18 @@ export function regrouperParAlbum(titres: readonly TitreDeezer[], aimes: Readonl
       titre: g[0].albumTitre,
       morceaux: g.length,
       coeurs: g.filter((t) => aimes.has(t.id)).length,
+      autreVersion: g.filter((t) => aimes.get(t.id) === 'version').length,
       moisEcoute: moisEcoute(temps),
       premierAjout: temps.length ? Math.min(...temps) : 0,
       dernierAjout: temps.length ? Math.max(...temps) : 0,
     })
   }
   return sortie.sort((a, b) => a.premierAjout - b.premierAjout || a.albumId - b.albumId)
+}
+
+// Titre du titre : « dont n sur une autre version » quand des cœurs viennent d'une autre version.
+export function libelleAutreVersion(n: number): string {
+  return n > 0 ? `dont ${n} sur une autre version` : ''
 }
 
 // Nom comparable : casse, accents, ponctuation et mentions entre parenthèses ou crochets ignorés.
@@ -202,7 +253,7 @@ export function messageMeilleur(annee: number, avant: number | null, apres: numb
 export interface LectureDeezer {
   lus: number // titres lus dans la playlist
   titres: TitreDeezer[] // titres avec album
-  coeurs: ReadonlySet<number>
+  coeurs: readonly CoeurDeezer[]
 }
 
 export type Lecteur = () => Promise<LectureDeezer>
@@ -257,7 +308,7 @@ export async function preparerEnregistrement(coches: readonly AlbumEcoute[], lec
   } catch {
     return { ok: false, message: MESSAGE_DEEZER_INJOIGNABLE }
   }
-  const frais = new Map(regrouperParAlbum(lecture.titres, lecture.coeurs).map((a) => [a.albumId, a]))
+  const frais = new Map(regrouperParAlbum(lecture.titres, titresAimes(lecture.titres, lecture.coeurs)).map((a) => [a.albumId, a]))
   const albums: AlbumEcoute[] = []
   const absents: AlbumEcoute[] = []
   for (const a of coches) {

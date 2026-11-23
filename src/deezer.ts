@@ -1,6 +1,6 @@
 // Appels Deezer en JSONP (api.deezer.com n'envoie pas d'en-têtes CORS). Impur : DOM et réseau. Lecture seule.
 import { enParallele } from './parallele'
-import { titreDepuisDeezer, type LectureDeezer, type PisteBrute, type TitreDeezer } from './ecouteLogic'
+import { coeurDepuisDeezer, titreDepuisDeezer, type CoeurBrut, type CoeurDeezer, type LectureDeezer, type PisteBrute, type TitreDeezer } from './ecouteLogic'
 
 export const PLAYLIST_ECOUTE = '10292262522'
 export const PROFIL_COEURS = '2365945224'
@@ -82,12 +82,19 @@ export async function lirePlaylistTitres(id: string, surPage?: (n: number) => vo
   return { lus: elements.length, titres }
 }
 
-// Tous les cœurs du profil public (identifiants des titres aimés).
-export async function lireCoeurs(profil: string, surPage?: (n: number) => void): Promise<{ ids: Set<number>; total: number | null }> {
-  const { elements, total } = await pages<{ id?: number }>(`https://api.deezer.com/user/${profil}/tracks?limit=1000`, surPage)
-  const ids = new Set<number>()
-  for (const e of elements) if (typeof e.id === 'number') ids.add(e.id)
-  return { ids, total }
+// Tous les cœurs du profil public (identifiant, titre et artiste de chaque titre aimé).
+export async function lireCoeurs(profil: string, surPage?: (n: number) => void): Promise<{ coeurs: CoeurDeezer[]; total: number | null }> {
+  const { elements, total } = await pages<CoeurBrut>(`https://api.deezer.com/user/${profil}/tracks?limit=1000`, surPage)
+  const vus = new Set<number>()
+  const coeurs: CoeurDeezer[] = []
+  for (const e of elements) {
+    const c = coeurDepuisDeezer(e)
+    if (c && !vus.has(c.id)) {
+      vus.add(c.id)
+      coeurs.push(c)
+    }
+  }
+  return { coeurs, total }
 }
 
 // Lecture complète : playlist puis cœurs (jamais en cache : chaque appel relit Deezer).
@@ -96,7 +103,7 @@ export async function lireEcoute(surEtape?: (texte: string) => void): Promise<Le
   const pl = await lirePlaylistTitres(PLAYLIST_ECOUTE, (n) => surEtape?.(`Lecture de la playlist : ${n} titres…`))
   surEtape?.('Lecture des cœurs…')
   const c = await lireCoeurs(PROFIL_COEURS, (n) => surEtape?.(`Lecture des cœurs : ${n}…`))
-  return { lus: pl.lus, titres: pl.titres, coeurs: c.ids, coeursLus: c.ids.size }
+  return { lus: pl.lus, titres: pl.titres, coeurs: c.coeurs, coeursLus: c.coeurs.length }
 }
 
 // Seul nb_tracks est lu : il sert à signaler un écart avec la playlist (l'année ne vient jamais de Deezer).
